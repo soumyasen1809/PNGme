@@ -18,9 +18,9 @@ impl ChunkType {
         // Ancillary bit: bit 5 of first byte
         // 0 (uppercase) = critical, 1 (lowercase) = ancillary.
         let bytes_type_code = self.bytes();
-        let ancillary_bit = bytes_type_code[0] >> 4 & 1;
-        println!("ancillary_bit: {}", ancillary_bit);
-        if ancillary_bit == 0 {
+        // let ancillary_bit = bytes_type_code[0] >> 4 & 1;
+        // Uppercase- true, lowercase- false
+        if bytes_type_code[0].is_ascii_uppercase() {
             true
         } else {
             false
@@ -30,9 +30,8 @@ impl ChunkType {
         // Private bit: bit 5 of second byte
         // 0 (uppercase) = public, 1 (lowercase) = private.
         let bytes_type_code = self.bytes();
-        let private_bit = bytes_type_code[1] >> 4 & 1;
-        println!("private_bit: {}", private_bit);
-        if private_bit == 0 {
+        // Uppercase- true, lowercase- false
+        if bytes_type_code[1].is_ascii_uppercase() {
             true
         } else {
             false
@@ -42,9 +41,8 @@ impl ChunkType {
         // Reserved bit: bit 5 of third byte
         // Must be 0 (uppercase) in files conforming to this version of PNG.
         let bytes_type_code = self.bytes();
-        let reserved_bit = bytes_type_code[2] >> 4 & 1;
-        println!("reserved_bit: {}", reserved_bit);
-        if reserved_bit == 0 {
+        // Uppercase- true, lowercase- false
+        if bytes_type_code[2].is_ascii_uppercase() {
             true
         } else {
             false
@@ -54,15 +52,21 @@ impl ChunkType {
         // Safe-to-copy bit: bit 5 of fourth byte
         // 0 (uppercase) = unsafe to copy, 1 (lowercase) = safe to copy.
         let bytes_type_code = self.bytes();
-        let safe_to_copy_bit = bytes_type_code[3] >> 4 & 1;
-        println!("safe_to_copy: {}", safe_to_copy_bit);
-        if safe_to_copy_bit == 0 {
-            true
-        } else {
+        // Uppercase- false, lowercase- true
+        if bytes_type_code[3].is_ascii_uppercase() {
             false
+        } else {
+            true
         }
     }
-    // pub fn is_valid(&self) -> bool {}
+    pub fn is_valid(&self) -> bool {
+        self.bytes().is_ascii()
+            && self.is_reserved_bit_valid()
+            && self.bytes()[0].is_ascii_alphabetic()
+            && self.bytes()[1].is_ascii_alphabetic()
+            && self.bytes()[2].is_ascii_alphabetic()
+            && self.bytes()[3].is_ascii_alphabetic()
+    }
 }
 
 impl TryFrom<[u8; 4]> for ChunkType {
@@ -81,12 +85,10 @@ impl TryFrom<[u8; 4]> for ChunkType {
 impl FromStr for ChunkType {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        println!("str: {:?}", s);
-        println!("u32::from_str(s): {:?}", s.parse::<u32>());
         if s.len() != 4 {
             return Err("String must be exactly 4 characters long");
         }
-        let bytes = s.as_bytes();
+        let bytes = s.trim().as_bytes();
         let bytes_array: [u8; 4] = [bytes[0], bytes[1], bytes[2], bytes[3]];
         ChunkType::try_from(bytes_array).map_err(|_| "Failed to convert to ChunkType")
     }
@@ -173,20 +175,20 @@ mod tests {
         assert!(!chunk.is_safe_to_copy());
     }
 
-    // #[test]
-    // pub fn test_valid_chunk_is_valid() {
-    //     let chunk = ChunkType::from_str("RuSt").unwrap();
-    //     assert!(chunk.is_valid());
-    // }
+    #[test]
+    pub fn test_valid_chunk_is_valid() {
+        let chunk = ChunkType::from_str("RuSt").unwrap();
+        assert!(chunk.is_valid());
+    }
 
-    // #[test]
-    // pub fn test_invalid_chunk_is_valid() {
-    //     let chunk = ChunkType::from_str("Rust").unwrap();
-    //     assert!(!chunk.is_valid());
+    #[test]
+    pub fn test_invalid_chunk_is_valid() {
+        let chunk = ChunkType::from_str("Rust").unwrap();
+        assert!(!chunk.is_valid());
 
-    //     let chunk = ChunkType::from_str("Ru1t");
-    //     assert!(chunk.is_err());
-    // }
+        let chunk = ChunkType::from_str("Ru1t");
+        assert!(chunk.is_err());
+    }
 
     #[test]
     pub fn test_chunk_type_string() {
