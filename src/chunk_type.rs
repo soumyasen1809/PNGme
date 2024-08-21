@@ -1,17 +1,15 @@
+use core::str;
 use std::fmt::Display;
 use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct ChunkType {
-    type_code: u32, // Chunk Type: A 4-byte chunk type code
+    type_code: [u8; 4], // Chunk Type: A 4-byte chunk type code
 }
 
 impl ChunkType {
     pub fn bytes(&self) -> [u8; 4] {
-        let byte_array: [u8; 4] = self.type_code.to_be_bytes(); // https://users.rust-lang.org/t/how-to-serialize-a-u32-into-byte-array/986/5
-        println!("byte_aaray: {:?}", byte_array);
-
-        byte_array
+        self.type_code
     }
 
     pub fn is_critical(&self) -> bool {
@@ -73,10 +71,7 @@ impl TryFrom<[u8; 4]> for ChunkType {
     type Error = &'static str;
     fn try_from(value: [u8; 4]) -> Result<Self, Self::Error> {
         // https://doc.rust-lang.org/std/convert/trait.TryFrom.html
-        println!("value: {:?}", value);
-        let chunk = Self {
-            type_code: u32::from_be_bytes(value),
-        };
+        let chunk = Self { type_code: value };
 
         Ok(chunk)
     }
@@ -88,6 +83,13 @@ impl FromStr for ChunkType {
         if s.len() != 4 {
             return Err("String must be exactly 4 characters long");
         }
+        if !s.as_bytes()[0].is_ascii_alphabetic()
+            || !s.as_bytes()[1].is_ascii_alphabetic()
+            || !s.as_bytes()[2].is_ascii_alphabetic()
+            || !s.as_bytes()[3].is_ascii_alphabetic()
+        {
+            return Err("String not completely alphabetic");
+        }
         let bytes = s.trim().as_bytes();
         let bytes_array: [u8; 4] = [bytes[0], bytes[1], bytes[2], bytes[3]];
         ChunkType::try_from(bytes_array).map_err(|_| "Failed to convert to ChunkType")
@@ -96,7 +98,7 @@ impl FromStr for ChunkType {
 
 impl Display for ChunkType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "chunk: {}", self.type_code)
+        write!(f, "{}", str::from_utf8(&self.type_code).unwrap().trim())
     }
 }
 
@@ -192,6 +194,7 @@ mod tests {
 
     #[test]
     pub fn test_chunk_type_string() {
+        // Test for impl Display
         let chunk = ChunkType::from_str("RuSt").unwrap();
         assert_eq!(&chunk.to_string(), "RuSt");
     }
