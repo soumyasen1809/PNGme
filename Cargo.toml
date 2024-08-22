@@ -1,0 +1,11 @@
+[package]
+name = "png_me"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+crc = "3.2.1"
+
+[[bin]]
+name = "pngme_bin"
+path = "src/main.rs"
