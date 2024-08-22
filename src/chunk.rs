@@ -3,6 +3,8 @@ use std::fmt::Display;
 
 use crate::chunk_type::ChunkType;
 
+const ALGORITHM_CRC: crc::Algorithm<u32> = crc::CRC_32_ISO_HDLC; // This algorithm is the one for the Unit Tests
+
 #[derive(Debug)]
 pub struct Chunk {
     data_length: u32,
@@ -13,7 +15,7 @@ pub struct Chunk {
 
 impl Chunk {
     pub fn new(chunk_type: ChunkType, data: Vec<u8>) -> Chunk {
-        let crc = crc::Crc::<u32>::new(&crc::CRC_32_CKSUM);
+        let crc = crc::Crc::<u32>::new(&ALGORITHM_CRC);
         let data_to_crc: Vec<u8> = chunk_type
             .bytes()
             .iter()
@@ -52,7 +54,6 @@ impl Chunk {
 impl TryFrom<&[u8]> for Chunk {
     type Error = &'static str;
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        println!("value: {:?}", value);
         let (split_data_length, remaining_after_length) = value.split_at(4);
         let data_length = u32::from_be_bytes(
             // passes with be, fails with le
@@ -60,10 +61,7 @@ impl TryFrom<&[u8]> for Chunk {
                 .try_into()
                 .expect("slice with incorrect length"),
         ); // convert from &[u8] to u32 in rust
-        println!(
-            "data_length: {:?}, split_data_length: {:?}",
-            data_length, split_data_length
-        );
+
         let (split_type_code, remaining_after_type) = remaining_after_length.split_at(4);
         let chunk_type = ChunkType {
             type_code: [
@@ -74,19 +72,37 @@ impl TryFrom<&[u8]> for Chunk {
             ],
         };
 
-        let (split_message_bytes, _) =
+        let (split_message_bytes, remaining_after_data) =
             remaining_after_type.split_at(data_length.try_into().unwrap());
-        let mut message_bytes: Vec<u8> = split_message_bytes.to_vec();
-        let crc = value[6];
+        let message_bytes: Vec<u8> = split_message_bytes.to_vec();
+
+        if remaining_after_data.len() != 4 {
+            return Err("Wrong data length");
+        }
+
+        let crc = crc::Crc::<u32>::new(&ALGORITHM_CRC);
+        let data_to_crc: Vec<u8> = chunk_type
+            .bytes()
+            .iter()
+            .chain(message_bytes.iter())
+            .copied()
+            .collect();
+        let crc_val_computed = crc.checksum(&data_to_crc);
+
+        let crc_val_from_bytes =
+            u32::from_be_bytes(remaining_after_data.try_into().expect("Crc Error"));
+
+        // The CRC from the calculation and from the last 4 bytes should match
+        if crc_val_computed != crc_val_from_bytes {
+            return Err("Crc values do not match");
+        };
 
         let chunk = Chunk {
             data_length, // convert from &[u8] to u32 in rust
             chunk_type,
             message_bytes,
-            crc: crc.into(), // !to-do
+            crc: crc_val_from_bytes, // !to-do
         };
-
-        println!("chunk is: {:?}", chunk);
 
         Ok(chunk)
     }
