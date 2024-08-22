@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct ChunkType {
-    type_code: [u8; 4], // Chunk Type: A 4-byte chunk type code
+    pub type_code: [u8; 4], // Chunk Type: A 4-byte chunk type code
 }
 
 impl ChunkType {
