@@ -2,7 +2,7 @@ use core::str;
 use std::fmt::Display;
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct ChunkType {
     pub type_code: [u8; 4], // Chunk Type: A 4-byte chunk type code
 }

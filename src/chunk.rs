@@ -5,7 +5,7 @@ use crate::chunk_type::ChunkType;
 
 const ALGORITHM_CRC: crc::Algorithm<u32> = crc::CRC_32_ISO_HDLC; // This algorithm is the one for the Unit Tests
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Chunk {
     data_length: u32,
     chunk_type: ChunkType,
@@ -43,7 +43,7 @@ impl Chunk {
     pub fn crc(&self) -> u32 {
         self.crc
     }
-    pub fn data_as_string(&self) -> Result<String, ()> {
+    pub fn data_as_string(&self) -> Result<String, Box<dyn std::error::Error>> {
         Ok(str::from_utf8(&self.message_bytes).unwrap().to_string())
     }
     pub fn as_bytes(&self) -> Vec<u8> {

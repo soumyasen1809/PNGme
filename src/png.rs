@@ -15,7 +15,10 @@ impl Png {
     pub fn append_chunk(&mut self, chunk: Chunk) {
         self.signature.push(chunk);
     }
-    pub fn remove_first_chunk(&mut self, chunk_type: &str) -> Result<Chunk, ()> {
+    pub fn remove_first_chunk(
+        &mut self,
+        chunk_type: &str,
+    ) -> Result<Chunk, Box<dyn std::error::Error>> {
         let position = self
             .signature
             .iter()
