@@ -53,10 +53,28 @@ impl Png {
 impl TryFrom<&[u8]> for Png {
     type Error = &'static str;
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let chunk = Chunk::try_from(value)?;
-        Ok(Self {
-            signature: vec![chunk],
-        })
+        if value.len() < Png::STANDARD_HEADER.len() {
+            return Err("Length of string less than Standard Header");
+        }
+        let (header_from_value, value_without_header) = value.split_at(Png::STANDARD_HEADER.len());
+        if header_from_value != Png::STANDARD_HEADER {
+            return Err("Header is Invalid!");
+        }
+
+        let mut chunks: Vec<Chunk> = Vec::new();
+        let mut remaining_length = value_without_header.len();
+        let mut remaining_value = value_without_header;
+        while remaining_length > 0 {
+            let chunk = Chunk::try_from(remaining_value)?;
+
+            (_, remaining_value) =
+                remaining_value.split_at((chunk.length() + 12).try_into().unwrap());
+
+            chunks.push(chunk);
+
+            remaining_length = remaining_value.len();
+        }
+        Ok(Self { signature: chunks })
     }
 }
 
