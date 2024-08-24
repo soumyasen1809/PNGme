@@ -15,8 +15,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --release --verbose
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --release --verbose -- --test-threads=8
