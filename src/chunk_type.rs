@@ -2,7 +2,7 @@ use core::str;
 use std::fmt::Display;
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct ChunkType {
     pub type_code: [u8; 4], // Chunk Type: A 4-byte chunk type code
 }
@@ -12,7 +12,7 @@ impl ChunkType {
         self.type_code
     }
 
-    pub fn is_critical(&self) -> bool {
+    fn is_critical(&self) -> bool {
         // Ancillary bit: bit 5 of first byte
         // 0 (uppercase) = critical, 1 (lowercase) = ancillary.
         let bytes_type_code = self.bytes();
@@ -24,7 +24,7 @@ impl ChunkType {
             false
         }
     }
-    pub fn is_public(&self) -> bool {
+    fn is_public(&self) -> bool {
         // Private bit: bit 5 of second byte
         // 0 (uppercase) = public, 1 (lowercase) = private.
         let bytes_type_code = self.bytes();
@@ -35,7 +35,7 @@ impl ChunkType {
             false
         }
     }
-    pub fn is_reserved_bit_valid(&self) -> bool {
+    fn is_reserved_bit_valid(&self) -> bool {
         // Reserved bit: bit 5 of third byte
         // Must be 0 (uppercase) in files conforming to this version of PNG.
         let bytes_type_code = self.bytes();
@@ -46,7 +46,7 @@ impl ChunkType {
             false
         }
     }
-    pub fn is_safe_to_copy(&self) -> bool {
+    fn is_safe_to_copy(&self) -> bool {
         // Safe-to-copy bit: bit 5 of fourth byte
         // 0 (uppercase) = unsafe to copy, 1 (lowercase) = safe to copy.
         let bytes_type_code = self.bytes();
@@ -57,7 +57,7 @@ impl ChunkType {
             true
         }
     }
-    pub fn is_valid(&self) -> bool {
+    fn is_valid(&self) -> bool {
         self.bytes().is_ascii()
             && self.is_reserved_bit_valid()
             && self.bytes()[0].is_ascii_alphabetic()
